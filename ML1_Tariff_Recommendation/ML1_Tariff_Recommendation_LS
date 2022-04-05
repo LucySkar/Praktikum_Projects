@@ -1,0 +1,200 @@
+Загрузка…
+ML1_Tariff_Recommendation_LS.ipynb
+ML1_Tariff_Recommendation_LS.ipynbC_
+[ ]
+Tariff Recommendation for Telecom Company
+Goal: build a classification model predicting the right tariff for customer based on his montly calls, texts and internet activity. Target parameter - is_ultra, with 1 meaning tariff 'Ultra, and 0 standing for tariff 'Smart'.
+
+Condition: accuracy > 0.5
+
+File and libraries download
+[ ]
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression 
+from sklearn.metrics import accuracy_score
+[ ]
+from google.colab import files
+uploaded = files.upload()
+
+[ ]
+import io
+df = pd.read_csv(io.BytesIO(uploaded['users_behavior.csv']))
+[ ]
+df.head(10)
+
+[ ]
+df.info()
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 3214 entries, 0 to 3213
+Data columns (total 5 columns):
+ #   Column    Non-Null Count  Dtype  
+---  ------    --------------  -----  
+ 0   calls     3214 non-null   float64
+ 1   minutes   3214 non-null   float64
+ 2   messages  3214 non-null   float64
+ 3   mb_used   3214 non-null   float64
+ 4   is_ultra  3214 non-null   int64  
+dtypes: float64(4), int64(1)
+memory usage: 125.7 KB
+CSV file is opened and read. The data types in columns correspond to the data stored in them, no NA values in in any colomns.
+
+Data split to subsets
+[ ]
+df_train, df_valid = train_test_split(
+    df, test_size=0.4, random_state=12345)
+df_valid, df_test = train_test_split(
+    df_valid, test_size=0.5, random_state=12345)
+[ ]
+df_train.info()
+<class 'pandas.core.frame.DataFrame'>
+Int64Index: 1928 entries, 3027 to 482
+Data columns (total 5 columns):
+ #   Column    Non-Null Count  Dtype  
+---  ------    --------------  -----  
+ 0   calls     1928 non-null   float64
+ 1   minutes   1928 non-null   float64
+ 2   messages  1928 non-null   float64
+ 3   mb_used   1928 non-null   float64
+ 4   is_ultra  1928 non-null   int64  
+dtypes: float64(4), int64(1)
+memory usage: 90.4 KB
+[ ]
+df_valid.info()
+<class 'pandas.core.frame.DataFrame'>
+Int64Index: 643 entries, 1386 to 3197
+Data columns (total 5 columns):
+ #   Column    Non-Null Count  Dtype  
+---  ------    --------------  -----  
+ 0   calls     643 non-null    float64
+ 1   minutes   643 non-null    float64
+ 2   messages  643 non-null    float64
+ 3   mb_used   643 non-null    float64
+ 4   is_ultra  643 non-null    int64  
+dtypes: float64(4), int64(1)
+memory usage: 30.1 KB
+[ ]
+df_test.info()
+<class 'pandas.core.frame.DataFrame'>
+Int64Index: 643 entries, 160 to 2313
+Data columns (total 5 columns):
+ #   Column    Non-Null Count  Dtype  
+---  ------    --------------  -----  
+ 0   calls     643 non-null    float64
+ 1   minutes   643 non-null    float64
+ 2   messages  643 non-null    float64
+ 3   mb_used   643 non-null    float64
+ 4   is_ultra  643 non-null    int64  
+dtypes: float64(4), int64(1)
+memory usage: 30.1 KB
+Data split into 3 subsets: train (60%), validation (20%) and test (20%).
+
+Model building and research
+Choosing features and target variables
+
+[ ]
+features_train = df_train.drop(['is_ultra'], axis=1)
+target_train = df_train['is_ultra']
+features_valid = df_valid.drop(['is_ultra'], axis=1)
+target_valid = df_valid['is_ultra']
+features_test = df_test.drop(['is_ultra'], axis=1)
+target_test = df_test['is_ultra']
+Now let's train a few models and choose hyperparameters on validation subsets.
+
+Decision Tree
+[ ]
+best_model_dt = None
+best_depth_dt = 0
+best_accuracy_dt = 0
+for depth in range(1,20):
+    model_dt = DecisionTreeClassifier(random_state=12345, max_depth=depth)
+    model_dt.fit(features_train, target_train)
+    predictions_valid = model_dt.predict(features_valid)
+    accuracy_dt = accuracy_score(target_valid, predictions_valid)
+    if accuracy_dt > best_accuracy_dt:
+        best_depth_dt = depth
+        best_accuracy_dt = accuracy_dt
+        best_model_dt= model_dt
+print(f'Best Decision Tree model with depth {best_depth_dt}, accuracy = {best_accuracy_dt}')    
+    
+Best Decision Tree model with depth 3, accuracy = 0.7853810264385692
+Random Forest
+[ ]
+best_model_rf = None
+best_est_rf = 0
+best_depth_rf = 0
+best_accuracy_rf = 0
+for est in range(10, 51, 10):
+    for depth in range (1, 11):
+        model_rf = RandomForestClassifier(random_state=12345, n_estimators=est, max_depth=depth)
+        model_rf.fit(features_train, target_train)
+        predictions_valid = model_rf.predict(features_valid)
+        accuracy_rf = accuracy_score(target_valid, predictions_valid)
+        if accuracy_rf > best_accuracy_rf:
+            best_model_rf = model_rf
+            best_est_rf = est
+            best_depth_rf = depth
+            best_accuracy_rf = accuracy_rf
+print(f'Best Random Forest model with {best_est_rf} trees with maximum depth {best_depth_rf}, accuracy = {best_accuracy_rf}')
+Best Random Forest model with 40 trees with maximum depth 8, accuracy = 0.8087091757387247
+Logistic Regression
+[ ]
+model_lr = LogisticRegression(random_state=12345) 
+model_lr.fit(features_train, target_train)
+predictions_valid = model_lr.predict(features_valid)
+accuracy_lr = accuracy_score(target_valid, predictions_valid)
+
+
+print("Logistic Regression accuracy:", accuracy_lr)
+Logistic Regression accuracy: 0.7107309486780715
+Model Test
+Testing each of the modelling algorithms' best modet on test subset
+
+Decision Tree
+[ ]
+predictions_test_dt = best_model_dt.predict(features_test)
+accuracy_dt_test = accuracy_score(target_test, predictions_test_dt)
+
+print("Decision Tree Model test accuracy:", accuracy_dt_test)
+Decision Tree Model test accuracy: 0.7791601866251944
+Random forest
+[ ]
+predictions_test_rf = best_model_rf.predict(features_test)
+accuracy_rf_test = accuracy_score(target_test, predictions_test_rf)
+
+print("Random Forest Model test accuracy::", accuracy_rf_test)
+Random Forest Model test accuracy:: 0.7962674961119751
+Логистическая регрессия
+[ ]
+predictions_test_lr = model_lr.predict(features_test)
+accuracy_lr_test = accuracy_score(target_test, predictions_test_lr)
+
+
+print("Logistic Regression Model test accuracy::", accuracy_lr_test)
+Logistic Regression Model test accuracy:: 0.6842923794712286
+Conclusion
+Accuracy of all the three models predictions exceeds 75%, maximum accuracy (81%) is reached for Random Forest Model.
+
+Sanity test
+[ ]
+df['is_ultra'].value_counts(normalize=True)
+0    0.693528
+1    0.306472
+Name: is_ultra, dtype: float64
+Most customers are using tariff 'Smart', so the constant model will predict all target values as 0. Constant Dummy-model accyracy calculation:
+
+[ ]
+from sklearn.dummy import DummyClassifier
+dummy = DummyClassifier(strategy='most_frequent', random_state=12345).fit(features_train, target_train)
+dummy_pred = dummy.predict(features_test)
+print('Dummy-model test subset accuracy:', accuracy_score(target_test, dummy_pred))
+Dummy-model test subset accuracy: 0.6842923794712286
+Constant model accuracy on test subset (69%) is lower than the one for the chosen Random Forest model (81%), thus, the model developed passes sanity test.
+
+Conclusion
+Data was downloaded, read and divided into three subsets
+Three models have been trained, validated and tested
+Highest accuracy (81%) reached for Random Forest Model
+The chosen best model has passed sanity test
