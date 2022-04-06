@@ -14,7 +14,7 @@ Data Source: [https://www.kaggle.com/barelydedicated/bank-customer-churn-modelin
 - Models not taking into account class disbalance have been created and analysed - all models' F1-scores do not satisfy quality condition
 - 3 ways to fight disbalance have been assessed:
     - Class weighting did not acqure satisfactory result
-    - 4 times Upsampling and Downsampling were most effective in terms of meeting F1 criteria
+    - 2 times Upsampling and Downsampling were most effective in terms of meeting F1 criteria
     - Hyperparameters chosen for best Random Forest model
 - Chosen best model has passed testing:
     - F1-score = 0.62, above cut-off value
